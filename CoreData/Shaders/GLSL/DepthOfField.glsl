@@ -9,7 +9,9 @@
 varying vec2 vScreenPos;
 
 #ifdef COMPILEPS
-uniform vec2 cHBlurInvSize;
+uniform vec2 cviewportInvSize;
+uniform vec2 cstoredInvSize;
+uniform vec2 cBlurVInvSize;
 #endif
 
 void VS()
@@ -25,17 +27,17 @@ void VS()
 void PS()
 {
 #line 0
-    float pixelSizeHigh = cHBlurInvSize.y;
-    float pixelSizeLow = cHBlurInvSize.y / 8.0;
+    float pixelSizeHigh = cstoredInvSize.x;
+    float pixelSizeLow = cstoredInvSize.x;
     
     //float m = pixelSizeHigh;
     //vec2 poisson[NUM_TAPS];
         
     vec2 vMaxCoC = vec2(5f, 10f);
-    float radiusScale = 0.3f;
+    float radiusScale = 0.4f;
     
-    vec4 cOut = texture2D(sNormalMap, vScreenPos); // original
-    //vec4 cOut = texture2D(sDiffMap, vScreenPos); // blurred
+    //vec4 cOut = texture2D(sNormalMap, vScreenPos); // original
+    vec4 cOut = texture2D(sDiffMap, vScreenPos); // blurred
     
     float discRadius; 
     float discRadiusLow; 
@@ -57,13 +59,17 @@ void PS()
         //float py = (-4 + t);
         //random [-1,1] * 8 -> [-8, 8]
         
-        vec2 p = noise2(vScreenPos.xy) * NUM_TAPS;
+        vec2 p = noise2(vScreenPos.xy);
+        //vec2 p = vec2();
+        
+        //vec2 coordLow = vScreenPos + vec2(pixelSizeLow * discRadiusLow);
+        //vec2 coordHigh = vScreenPos + vec2(pixelSizeHigh * discRadius);  
                 
         vec2 coordLow = vScreenPos + vec2(pixelSizeHigh * p.x * discRadiusLow);
         vec2 coordHigh = vScreenPos + vec2(pixelSizeHigh * p.y * discRadius);
         
-        //vec2 coordLow = vScreenPos + vec2(px * discRadiusLow);
-        //vec2 coordHigh = vScreenPos + vec2(py * discRadius);
+        //vec2 coordLow = vScreenPos + vec2(p.x * discRadiusLow);
+        //vec2 coordHigh = vScreenPos + vec2(p.y * discRadius);
         
         //vec2 coordLow = vScreenPos + vec2(pixelSizeLow * discRadiusLow);
         //vec2 coordHigh = vScreenPos + vec2(pixelSizeHigh * discRadius);

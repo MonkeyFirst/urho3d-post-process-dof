@@ -1,12 +1,13 @@
 <renderpath>
-    <rendertarget name="blurredFrameH" tag="DOF" sizedivisor="4 4" format="rgba" filter="true" />
-    <rendertarget name="blurredFrameV" tag="DOF" sizedivisor="4 4" format="rgba" filter="true" />
-    <rendertarget name="stored" tag="DOF" sizedivisor="1 1" format="rgba" filter="true" />
-    <rendertarget name="depth" sizedivisor="1 1" format="readabledepth" />
+    <rendertarget name="blurh" tag="DOF" sizedivisor="4 4" format="rgba" filter="true"/>
+    <rendertarget name="blurv" tag="DOF" sizedivisor="4 4" format="rgba" filter="true"/>
+    <rendertarget name="stored" tag="DOF" sizedivisor="1 1" format="rgba" filter="false"/>
+    <rendertarget name="depth" sizedivisor="1 1" format="readabledepth"/>
+    
     <command type="clear" depth="1.0" output="depth" />
     <command type="scenepass" pass="shadow" output="depth" />
     <command type="clear" color="fog" depthstencil="depth" />
-    <command type="scenepass" pass="base" vertexlights="true" metadata="base" depthstencil="depth" />
+    <command type="scenepass" pass="base" vertexlights="true" metadata="base" depthstencil="depth"/>
     <command type="forwardlights" pass="light" depthstencil="depth" />
     <command type="scenepass" pass="postopaque" depthstencil="depth" />
     <command type="scenepass" pass="refract" depthstencil="depth">
@@ -14,36 +15,39 @@
     </command>
     <command type="scenepass" pass="alpha" vertexlights="true" sort="backtofront" metadata="alpha" depthstencil="depth" />
     <command type="scenepass" pass="postalpha" sort="backtofront" depthstencil="depth" />
-    <command type="quad" tag="DOF" vs="CopyFramebufferDof" ps="CopyFramebufferDof" blend="replace" output="stored">
+    
+    <command type="quad" tag="DOF" vs="CopyFramebufferDof" ps="CopyFramebufferDof" blend="replace" output="stored">        
+        <parameter name="SmoothFocusEnabled" value="false"/>
+        <parameter name="SmoothFocus" value="0.1" />
         <texture unit="0" name="viewport" />
         <texture unit="1" name="depth" />
     </command>
-    <command type="quad" tag="Blur" vs="Blur" ps="Blur" psdefines="BLUR3" output="blurredFrameH">
+    <command type="quad" tag="Blur" vs="Blur" ps="Blur" psdefines="BLUR5" output="blurh">
         <parameter name="BlurDir" value="1.0 0.0" />
-        <parameter name="BlurRadius" value="4.0" />
-        <parameter name="BlurSigma" value="2.0" />
-        <texture unit="0" name="stored" />
+        <parameter name="BlurRadius" value="1.0" />
+        <parameter name="BlurSigma" value="3.0" />
+        <texture unit="diffuse" name="stored" />
     </command>
-    <command type="quad" tag="Blur" vs="Blur" ps="Blur" psdefines="BLUR3" output="blurredFrameV">
-        <parameter name="BlurDir" value="0.0 1.0" />
-        <parameter name="BlurRadius" value="4.0" />
-        <parameter name="BlurSigma" value="2.0" />
-        <texture unit="0" name="blurredFrameH" />
+    <command type="quad" tag="Blur" vs="Blur" ps="Blur" psdefines="BLUR5" output="blurv">
+        <parameter name="BlurDir" value="0.0 1.0"/>
+        <parameter name="BlurRadius" value="1.0"/>
+        <parameter name="BlurSigma" value="3.0"/>
+        <texture unit="diffuse" name="blurh"/>
     </command>
-    <command type="quad" tag="Blur" vs="Blur" ps="Blur" psdefines="BLUR3" output="blurredFrameH">
-        <parameter name="BlurDir" value="1.0 0.0" />
-        <parameter name="BlurRadius" value="2.0" />
-        <parameter name="BlurSigma" value="2.0" />
-        <texture unit="0" name="blurredFrameV" />
+    <command type="quad" tag="Blur" vs="Blur" ps="Blur" psdefines="BLUR3" output="blurh">
+        <parameter name="BlurDir" value="1.0 0.0"/>
+        <parameter name="BlurRadius" value="0.5"/>
+        <parameter name="BlurSigma" value="2.0"/>
+        <texture unit="diffuse" name="blurv" />
     </command>
-    <command type="quad" tag="Blur" vs="Blur" ps="Blur" psdefines="BLUR3" output="blurredFrameV">
-        <parameter name="BlurDir" value="0.0 1.0" />
-        <parameter name="BlurRadius" value="2.0" />
-        <parameter name="BlurSigma" value="2.0" />
-        <texture unit="0" name="blurredFrameH" />
+    <command type="quad" tag="Blur" vs="Blur" ps="Blur" psdefines="BLUR3" output="blurv">
+        <parameter name="BlurDir" value="0.0 1.0"/>
+        <parameter name="BlurRadius" value="0.5"/>
+        <parameter name="BlurSigma" value="2.0"/>
+        <texture unit="diffuse" name="blurh"/>
     </command>
     <command type="quad" tag="DOF" vs="DepthOfField" ps="DepthOfField" blend="replace" output="viewport">
-        <texture unit="0" name="blurredFrameV" />
-        <texture unit="1" name="stored" />
+        <texture unit="0" name="blurv"/>
+        <texture unit="1" name="stored"/>
     </command>
 </renderpath>
