@@ -4,13 +4,13 @@
 #include "ScreenPos.glsl"
 #include "PostProcess.glsl"
 
-#define NUM_TAPS 8
+#define NUM_TAPS 12
 
 varying vec2 vScreenPos;
 
 #ifdef COMPILEPS
 uniform vec2 cviewportInvSize;
-uniform vec2 cstoredInvSize;
+uniform vec2 cStoredInvSize;
 uniform vec2 cBlurVInvSize;
 #endif
 
@@ -22,77 +22,65 @@ void VS()
     vScreenPos = GetScreenPosPreDiv(gl_Position);
 }
 
-
-
 void PS()
 {
 #line 0
-    float pixelSizeHigh = cstoredInvSize.x;
-    float pixelSizeLow = cstoredInvSize.x;
+    vec4 cOut = vec4(0.0f);
     
-    //float m = pixelSizeHigh;
-    //vec2 poisson[NUM_TAPS];
-        
-    vec2 vMaxCoC = vec2(5f, 10f);
+    float pixelSizeHigh = cGBufferInvSize.x;
+    float pixelSizeLow = cGBufferInvSize.x / 4 ; // Blurred frame size is 1/4 of original frame
+    float dx = cGBufferInvSize.x;
+    float dy = cGBufferInvSize.y;
+    
+    vec2 poisson[NUM_TAPS];
+    poisson[0] = vec2(-0.326212f * dx, -0.40581f * dy);
+    poisson[1] = vec2(-0.840144f * dx, -0.07358f * dy);
+    poisson[2] = vec2(-0.695914f * dx, 0.457137f * dy);
+    poisson[3] = vec2(-0.203345f * dx, 0.620716f * dy);
+    poisson[4] = vec2(0.96234f * dx, -0.194983f * dy);
+    poisson[5] = vec2(0.473434f * dx, -0.480026f * dy);
+    poisson[6] = vec2(0.519456f * dx, 0.767022f * dy);
+    poisson[7] = vec2(0.185461f * dx, -0.893124f * dy);
+    poisson[8] = vec2(0.507431f * dx, 0.064425f * dy);
+    poisson[9] = vec2(0.89642f * dx, 0.412458f * dy);
+    poisson[10] = vec2(-0.32194f * dx, -0.932615f * dy);
+    poisson[11] = vec2(-0.791559f * dx, -0.59771f * dy);
+    
+    
+    vec2 vMaxCoC = vec2(5.0f, 10.0f);
     float radiusScale = 0.4f;
     
-    //vec4 cOut = texture2D(sNormalMap, vScreenPos); // original
-    vec4 cOut = texture2D(sDiffMap, vScreenPos); // blurred
+    vec4 depthBlur = texture2D(sSpecMap, vScreenPos); // DepthBlur texture r16
     
-    float discRadius; 
+    float discRadius;
     float discRadiusLow; 
     float centerDepth;
-    
-    centerDepth = cOut.a;
-    
+    float tapContribution = 1f;
+
+
     discRadius = abs(cOut.a * vMaxCoC.y - vMaxCoC.x);
     discRadiusLow = discRadius * radiusScale;
-    cOut = vec4(0.0f);
+    centerDepth = depthBlur.r;
     
     for (int t = 0; t < NUM_TAPS; t++) 
-    {
-        //poisson 
-        // [-4 4]
-        //float px = (-NUM_TAPS / 2.0f + t);
-        //float py = (-NUM_TAPS / 2.0f + t);
-        //float px = (-4 + t);
-        //float py = (-4 + t);
-        //random [-1,1] * 8 -> [-8, 8]
+    {        
+        vec2 coordLow = vScreenPos + vec2(pixelSizeLow * poisson[t] * discRadiusLow);
+        vec2 coordHigh = vScreenPos + vec2(pixelSizeHigh * poisson[t] * discRadius);
         
-        vec2 p = noise2(vScreenPos.xy);
-        //vec2 p = vec2();
+        vec4 tapLow = texture2D(sNormalMap, coordLow);          // Blurred frame 1/4 size
+        vec4 tapHigh = texture2D(sDiffMap , coordHigh);         // Original frame color data full sized
+        vec4 tapDepthBlur = texture2D(sSpecMap, coordHigh);     // DepthBlur (actual only depth)
         
-        //vec2 coordLow = vScreenPos + vec2(pixelSizeLow * discRadiusLow);
-        //vec2 coordHigh = vScreenPos + vec2(pixelSizeHigh * discRadius);  
-                
-        vec2 coordLow = vScreenPos + vec2(pixelSizeHigh * p.x * discRadiusLow);
-        vec2 coordHigh = vScreenPos + vec2(pixelSizeHigh * p.y * discRadius);
-        
-        //vec2 coordLow = vScreenPos + vec2(p.x * discRadiusLow);
-        //vec2 coordHigh = vScreenPos + vec2(p.y * discRadius);
-        
-        //vec2 coordLow = vScreenPos + vec2(pixelSizeLow * discRadiusLow);
-        //vec2 coordHigh = vScreenPos + vec2(pixelSizeHigh * discRadius);
-        
-        vec4 tapLow = texture2D(sDiffMap, coordLow);
-        vec4 tapHigh = texture2D(sNormalMap, coordHigh);
-        
-        float tapBlur = abs(tapHigh.a * 2.0 - 1.0);
+        float tapBlur = abs(tapDepthBlur.r * 2.0 - 1.0);
                 
         vec4 tap = mix(tapHigh, tapLow, tapBlur);
                 
-        tap.a = (tap.a >= centerDepth) ? 1.0f : abs(tap.a * 2.0 - 1.0);
+        tapContribution = (tap.a >= centerDepth) ? 1.0f : abs(tap.a * 2.0 - 1.0);
                  
-        cOut.rgb += tap.rgb * tap.a;
-        cOut.a += tap.a;
+        cOut.rgb += tap.rgb * tapContribution;
+        cOut.a += tapContribution;
     }
     
     gl_FragColor = cOut / cOut.a;
-    
-    //vec4 lowres = texture2D(sNormalMap, vScreenPos);
-    //gl_FragColor = vec4(lowres.a);
-    //vec4 hires = texture2D(sNormalMap, vScreenPos);
-    //float depth = ReconstructDepth(texture2D(sDepthBuffer, vScreenPos).r);
-    //gl_FragColor = vec4(lowres.a);
 }
 

@@ -1,7 +1,9 @@
 <renderpath>
     <rendertarget name="blurh" tag="DOF" sizedivisor="4 4" format="rgba" filter="true"/>
     <rendertarget name="blurv" tag="DOF" sizedivisor="4 4" format="rgba" filter="true"/>
-    <rendertarget name="stored" tag="DOF" sizedivisor="1 1" format="rgba" filter="false"/>
+    <rendertarget name="depthBlur" tag="DOF" sizedivisor="1 1" format="r16" filter="true"/>
+    <rendertarget name="framecopy" tag="DOF" sizedivisor="1 1" format="rgba" filter="true"/>
+    
     <rendertarget name="depth" sizedivisor="1 1" format="readabledepth"/>
     
     <command type="clear" depth="1.0" output="depth" />
@@ -16,7 +18,7 @@
     <command type="scenepass" pass="alpha" vertexlights="true" sort="backtofront" metadata="alpha" depthstencil="depth" />
     <command type="scenepass" pass="postalpha" sort="backtofront" depthstencil="depth" />
     
-    <command type="quad" tag="DOF" vs="CopyFramebufferDof" ps="CopyFramebufferDof" blend="replace" output="stored">        
+    <command type="quad" tag="DOF" vs="CopyFramebufferDof" ps="CopyFramebufferDof" blend="replace" output="depthBlur">        
         <parameter name="SmoothFocusEnabled" value="false"/>
         <parameter name="SmoothFocus" value="0.1" />
         <texture unit="0" name="viewport" />
@@ -26,7 +28,7 @@
         <parameter name="BlurDir" value="1.0 0.0" />
         <parameter name="BlurRadius" value="1.0" />
         <parameter name="BlurSigma" value="3.0" />
-        <texture unit="diffuse" name="stored" />
+        <texture unit="diffuse" name="viewport" />
     </command>
     <command type="quad" tag="Blur" vs="Blur" ps="Blur" psdefines="BLUR5" output="blurv">
         <parameter name="BlurDir" value="0.0 1.0"/>
@@ -46,8 +48,12 @@
         <parameter name="BlurSigma" value="2.0"/>
         <texture unit="diffuse" name="blurh"/>
     </command>
-    <command type="quad" tag="DOF" vs="DepthOfField" ps="DepthOfField" blend="replace" output="viewport">
-        <texture unit="0" name="blurv"/>
-        <texture unit="1" name="stored"/>
+    <command type="quad" tag="DOF" vs="DepthOfField" ps="DepthOfField" blend="replace" output="framecopy">
+        <texture unit="0" name="viewport"/>
+        <texture unit="1" name="blurv"/>
+        <texture unit="2" name="depthBlur"/>
+    </command>    
+    <command type="quad" tag="DOF" vs="CopyFramebuffer" ps="CopyFramebuffer" blend="replace" output="viewport">        
+        <texture unit="0" name="framecopy" />
     </command>
 </renderpath>

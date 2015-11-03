@@ -84,7 +84,8 @@ void PS()
     }
     
     float a = DepthToAlpha(depth, focusDepth);
-    vec4 color = texture2D(sDiffMap, vScreenPos);
-    gl_FragColor = vec4(vec3(color.xyz), a);
+    //float blur = clamp(1.0, 0.0, 1.0); 
+    //gl_FragColor = vec4(a, blur, 0, 0);
+    gl_FragColor = vec4(a, 0, 0, 0);
 }
 #endif
