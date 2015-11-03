@@ -21,6 +21,10 @@
     <command type="quad" tag="DOF" vs="CopyFramebufferDof" ps="CopyFramebufferDof" blend="replace" output="depthBlur">        
         <parameter name="SmoothFocusEnabled" value="false"/>
         <parameter name="SmoothFocus" value="0.1" />
+        <parameter name="Focal" value="10" />
+        <parameter name="FocalNear" value="15" />
+        <parameter name="FocalFar" value="10" />
+        
         <texture unit="0" name="viewport" />
         <texture unit="1" name="depth" />
     </command>

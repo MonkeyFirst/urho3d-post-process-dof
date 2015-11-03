@@ -5,15 +5,12 @@
 
 varying vec2 vScreenPos;
 
-float focalDistance = 10;
-float focalNearDistance = 15;
-float focalFarDistance = 10;
-
-float focalRange = 0.5;
-
 #ifdef COMPILEPS
 uniform float cSmoothFocus;
 uniform bool cSmoothFocusEnabled;
+uniform float cFocal;
+uniform float cFocalNear;
+uniform float cFocalFar;
 #endif
 
 void VS()
@@ -39,16 +36,16 @@ float DepthToAlpha(float depth, float centerDepth)
     //cFarClipPS 1000
     
     float invFullField = 1.0f / (cFarClipPS - cNearClipPS); // 0.001 
-    float focal = invFullField * focalDistance;        
+    float focal = invFullField * cFocal;        
         
     // x = near blur depth    
-    vDofParams.x = centerDepth - (invFullField * focalNearDistance);
+    vDofParams.x = centerDepth - (invFullField * cFocalNear);
     
     // y = focal plane depth 
     vDofParams.y = centerDepth;
     
     // z = far blur depth
-    vDofParams.z = centerDepth + (invFullField * focalFarDistance); 
+    vDofParams.z = centerDepth + (invFullField * cFocalFar); 
     
     // w = blurriness cutoff constant for objects behind the focal plane
     vDofParams.w = 1;

@@ -3,16 +3,8 @@
 #include "Transform.glsl"
 #include "ScreenPos.glsl"
 #include "PostProcess.glsl"
-
 #define NUM_TAPS 12
-
 varying vec2 vScreenPos;
-
-#ifdef COMPILEPS
-uniform vec2 cviewportInvSize;
-uniform vec2 cStoredInvSize;
-uniform vec2 cBlurVInvSize;
-#endif
 
 void VS()
 {
@@ -75,7 +67,7 @@ void PS()
                 
         vec4 tap = mix(tapHigh, tapLow, tapBlur);
                 
-        tapContribution = (tap.a >= centerDepth) ? 1.0f : abs(tap.a * 2.0 - 1.0);
+        tapContribution = (tapDepthBlur.r >= centerDepth) ? 1.0f : abs(tapDepthBlur.r * 2.0 - 1.0);
                  
         cOut.rgb += tap.rgb * tapContribution;
         cOut.a += tapContribution;
