@@ -1,11 +1,9 @@
 #include "Urho3DAll.h"
 #include "SmoothFocus.h"
 
-
 SmoothFocus::SmoothFocus(Context* context) : LogicComponent(context)
 {
-
-	SetUpdateEventMask(USE_FIXEDUPDATE | USE_UPDATE);
+	SetUpdateEventMask(USE_POSTUPDATE);
 }
 
 void SmoothFocus::RegisterObject(Context* context)
@@ -15,41 +13,20 @@ void SmoothFocus::RegisterObject(Context* context)
 
 void SmoothFocus::Start()
 {
-	
 	camera = GetNode()->GetComponent<Camera>();
 	octree = GetScene()->GetComponent<Octree>();
 	smoothTimeSec = 0.5f;
-	smoothTimeElapsed = 0.001f;
-	
+	smoothTimeElapsed = 0.001f;	
 }
 
-void SmoothFocus::Update(float timeStep)
+void SmoothFocus::PostUpdate(float timeStep)
 {
 	if (!vp | !rp) return;
 
-	smoothTimeElapsed += timeStep;
+	float targetFocus = GetNearestFocus(camera->GetFarClip());
 
-	if (smoothTimeElapsed > smoothTimeSec)
-	{
-		smoothFocusRawPrev = smoothFocusRawLast;
-		
-		
-		smoothTimeElapsed = 0.001f;
-	} 
-	else 
-	{
-		if (smoothFocusRawPrev < smoothFocusRawLast)
-			smoothFocus = Lerp(smoothFocusRawPrev, smoothFocusRawLast, smoothTimeElapsed / smoothTimeSec );
-		else
-			smoothFocus = Lerp(smoothFocusRawLast, smoothFocusRawPrev, smoothTimeElapsed / smoothTimeSec );
-	}
-
+	smoothFocus = Lerp(smoothFocus, targetFocus, timeStep * 10.0f / smoothTimeSec);
 	rp->SetShaderParameter("SmoothFocus", Variant(smoothFocus));
-}
-
-void SmoothFocus::FixedUpdate(float timeStep)
-{
-	smoothFocusRawLast = GetNearestFocus(camera->GetFarClip());
 }
 
 void SmoothFocus::SetViewport(SharedPtr<Viewport> viewport)
@@ -66,12 +43,7 @@ float SmoothFocus::GetNearestFocus(float zCameraFarClip)
 	
 	PODVector<RayQueryResult> results;
 
-	//Graphics* g = GetSubsystem<Graphics>();
-	//Ray ray = vp->GetScreenRay(g->GetWidth() / 2, g->GetHeight() / 2);
-	//Ray ray = Ray(camera->GetNode()->GetWorldPosition(), camera->GetNode()->GetWorldDirection());
-
 	Ray ray = camera->GetScreenRay(0.5f, 0.5f);
-
 
 	RayOctreeQuery query(results, ray, RAY_TRIANGLE, zCameraFarClip, DRAWABLE_GEOMETRY, -1);	
 	octree->RaycastSingle(query);
@@ -83,11 +55,9 @@ float SmoothFocus::GetNearestFocus(float zCameraFarClip)
 			RayQueryResult& result = results[i];
 			Vector3 hitPoint = result.position_;
 			
-			
 			float distance = (camera->GetNode()->GetWorldPosition() - hitPoint).Length();
 			
 			return distance;
-
 		}
 	}
 
